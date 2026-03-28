@@ -1,0 +1,7 @@
+{
+  "name": "handwriting",
+  "private": true,
+  "scripts": {
+    "dev": "../../scripts/run-handwriting.sh"
+  }
+}

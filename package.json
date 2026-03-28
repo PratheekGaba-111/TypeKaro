@@ -1,0 +1,17 @@
+{
+  "name": "typing-handwriting-analyzer",
+  "private": true,
+  "workspaces": ["apps/*", "services/*", "packages/*"],
+  "scripts": {
+    "dev": "concurrently \"npm run dev --workspace apps/api\" \"npm run dev --workspace apps/web\"",
+    "dev:api": "npm run dev --workspace apps/api",
+    "dev:web": "npm run dev --workspace apps/web",
+    "dev:handwriting": "npm run dev --workspace services/handwriting",
+    "build": "npm run build --workspace apps/api && npm run build --workspace apps/web",
+    "test": "npm run test --workspace apps/api",
+    "reset:demo": "npm run reset:demo --workspace apps/api"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
