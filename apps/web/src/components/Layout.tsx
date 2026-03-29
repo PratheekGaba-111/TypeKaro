@@ -29,7 +29,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             <span className="chip chip-mint">Arcade Mode</span>
             <span className="chip chip-lilac">Mastery Track</span>
           </div>
-          <h1 className="mt-3 font-display text-3xl text-cloud">Typing Mastery</h1>
+          <h1 className="mt-3 font-display text-3xl text-cloud">TypeKaro</h1>
           <p className="text-xs uppercase tracking-[0.4em] text-cloud/50">Training Hub</p>
         </div>
         <nav className="flex flex-wrap items-center gap-3">

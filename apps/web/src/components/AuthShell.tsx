@@ -13,7 +13,7 @@ export const AuthShell: React.FC<{ children: React.ReactNode }> = ({ children })
             <span className="chip chip-mint">Access Pass</span>
             <span className="chip chip-lilac">Level Gate</span>
           </div>
-          <h1 className="mt-3 font-display text-3xl text-cloud">Typing Mastery</h1>
+          <h1 className="mt-3 font-display text-3xl text-cloud">TypeKaro</h1>
           <p className="mt-3 text-sm text-cloud/70">
             Sign in to track your progress and level up your typing skills.
           </p>
