@@ -42,6 +42,9 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
           <NavLink to="/bubbles" className={linkClass}>
             Bubble Keys
           </NavLink>
+          <NavLink to="/memory" className={linkClass}>
+            Memory Mode
+          </NavLink>
           <NavLink to="/word-rush" className={linkClass}>
             Word Rush
           </NavLink>

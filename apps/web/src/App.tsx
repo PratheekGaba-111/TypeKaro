@@ -8,6 +8,7 @@ import { TypingPage } from "./pages/TypingPage";
 import { PianoTilesPage } from "./pages/PianoTilesPage";
 import { BubbleKeysPage } from "./pages/BubbleKeysPage";
 import { WordRushPage } from "./pages/WordRushPage";
+import { MemoryModePage } from "./pages/MemoryModePage";
 
 const ResultsPage = React.lazy(() =>
   import("./pages/ResultsPage").then((module) => ({ default: module.ResultsPage }))
@@ -80,6 +81,14 @@ const App: React.FC = () => {
         element={
           <Protected>
             <WordRushPage />
+          </Protected>
+        }
+      />
+      <Route
+        path="/memory"
+        element={
+          <Protected>
+            <MemoryModePage />
           </Protected>
         }
       />
