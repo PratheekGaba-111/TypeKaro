@@ -4,18 +4,19 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        ink: "#0b0c1b",
-        cloud: "#f6f4f0",
-        accent: "#e4572e",
-        mint: "#2ec4b6",
-        lilac: "#b69cff"
+        ink: "rgb(var(--c-ink) / <alpha-value>)",
+        cloud: "rgb(var(--c-cloud) / <alpha-value>)",
+        overlay: "rgb(var(--c-overlay) / <alpha-value>)",
+        accent: "rgb(var(--c-accent) / <alpha-value>)",
+        mint: "rgb(var(--c-mint) / <alpha-value>)",
+        lilac: "rgb(var(--c-lilac) / <alpha-value>)"
       },
       fontFamily: {
         display: ["Space Grotesk", "ui-sans-serif", "system-ui"],
         body: ["Work Sans", "ui-sans-serif", "system-ui"]
       },
       boxShadow: {
-        glow: "8px 10px 0 rgba(46, 196, 182, 0.18), 0 18px 36px rgba(0, 0, 0, 0.32)"
+        glow: "var(--shadow-pop), var(--shadow-ambient)"
       }
     }
   },

@@ -6,6 +6,8 @@ import { LoginPage } from "./pages/LoginPage";
 import { SignupPage } from "./pages/SignupPage";
 import { TypingPage } from "./pages/TypingPage";
 import { PianoTilesPage } from "./pages/PianoTilesPage";
+import { BubbleKeysPage } from "./pages/BubbleKeysPage";
+import { WordRushPage } from "./pages/WordRushPage";
 
 const ResultsPage = React.lazy(() =>
   import("./pages/ResultsPage").then((module) => ({ default: module.ResultsPage }))
@@ -39,7 +41,7 @@ const Protected: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 };
 
 const PageLoader: React.FC = () => (
-  <div className="panel-solid rounded-3xl border border-white/10 px-6 py-8 text-sm text-cloud/70">
+  <div className="panel-solid rounded-3xl border border-overlay/10 px-6 py-8 text-sm text-cloud/70">
     Loading...
   </div>
 );
@@ -62,6 +64,22 @@ const App: React.FC = () => {
         element={
           <Protected>
             <PianoTilesPage />
+          </Protected>
+        }
+      />
+      <Route
+        path="/bubbles"
+        element={
+          <Protected>
+            <BubbleKeysPage />
+          </Protected>
+        }
+      />
+      <Route
+        path="/word-rush"
+        element={
+          <Protected>
+            <WordRushPage />
           </Protected>
         }
       />

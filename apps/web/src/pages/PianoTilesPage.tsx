@@ -86,6 +86,158 @@ const normalizeKey = (rawKey: string, difficulty: Difficulty) => {
   return upper;
 };
 
+const useRafTimestamp = (enabled: boolean) => {
+  const [timestamp, setTimestamp] = useState(() => performance.now());
+  const rafIdRef = useRef<number | null>(null);
+  const lastFrameMsRef = useRef(0);
+
+  useEffect(() => {
+    if (!enabled) {
+      return;
+    }
+
+    lastFrameMsRef.current = 0;
+    const frameIntervalMs = 1000 / 45;
+
+    const loop = (timeMs: number) => {
+      if (timeMs - lastFrameMsRef.current >= frameIntervalMs) {
+        lastFrameMsRef.current = timeMs;
+        setTimestamp(timeMs);
+      }
+      rafIdRef.current = requestAnimationFrame(loop);
+    };
+
+    rafIdRef.current = requestAnimationFrame(loop);
+    return () => {
+      if (rafIdRef.current !== null) {
+        cancelAnimationFrame(rafIdRef.current);
+      }
+      rafIdRef.current = null;
+    };
+  }, [enabled]);
+
+  return timestamp;
+};
+
+const PianoLaneBoard = React.memo<{
+  status: GameStatus;
+  boardRef: React.RefObject<HTMLDivElement>;
+  boardHeightPx: number;
+  hitLineY: number;
+  boardGridStyle: React.CSSProperties;
+  keys: string[];
+  pressedKeys: Set<string>;
+  tilesByLane: Tile[][];
+  travelMs: number;
+  startGame: () => void;
+  resetGame: () => void;
+}>(({
+  status,
+  boardRef,
+  boardHeightPx,
+  hitLineY,
+  boardGridStyle,
+  keys,
+  pressedKeys,
+  tilesByLane,
+  travelMs,
+  startGame,
+  resetGame
+}) => {
+  const nowMs = useRafTimestamp(status === "running");
+
+  return (
+    <div
+      ref={boardRef}
+      className="relative mt-6 h-[520px] overflow-hidden rounded-3xl border border-overlay/10 bg-black/20"
+    >
+      <div
+        className="absolute left-0 right-0"
+        style={{
+          top: Math.max(0, hitLineY - HIT_WINDOW_PX),
+          height: HIT_WINDOW_PX * 2
+        }}
+      >
+        <div className="h-full w-full bg-mint/5 blur-md" />
+      </div>
+      <div
+        className="absolute left-0 right-0"
+        style={{ top: hitLineY }}
+      >
+        <div className="h-[2px] w-full bg-mint/70 shadow-[0_0_18px_rgba(46,196,182,0.45)]" />
+      </div>
+
+      <div className="absolute inset-0 grid" style={boardGridStyle}>
+        {keys.map((laneKey, laneIndex) => {
+          const isPressed = pressedKeys.has(laneKey);
+          const laneTiles = tilesByLane[laneIndex] || [];
+          return (
+            <div
+              key={laneKey}
+              className={`relative h-full border-l border-overlay/10 ${laneIndex === 0 ? "border-l-0" : ""} ${isPressed ? "bg-overlay/5" : ""}`}
+            >
+              {laneTiles.map((tile) => {
+                const progress = (nowMs - tile.spawnAtMs) / travelMs;
+                const centerY = progress * boardHeightPx;
+                const topPx = Math.round(centerY - TILE_HEIGHT_PX / 2);
+                const gradient = TILE_GRADIENTS[tile.lane % TILE_GRADIENTS.length]!;
+                return (
+                  <div
+                    key={tile.id}
+                    className={`absolute left-2 right-2 top-0 rounded-2xl border border-overlay/20 bg-gradient-to-b ${gradient} shadow-[0_10px_18px_rgba(0,0,0,0.26)]`}
+                    style={{
+                      transform: `translate3d(0, ${topPx}px, 0)`,
+                      willChange: "transform",
+                      height: `${TILE_HEIGHT_PX}px`
+                    }}
+                  />
+                );
+              })}
+
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2">
+                <div
+                  className={`rounded-full border px-4 py-2 text-center font-mono text-sm ${isPressed ? "border-mint/60 bg-mint/20 text-cloud" : "border-overlay/20 bg-overlay/5 text-cloud/80"}`}
+                >
+                  {laneKey}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {status !== "running" ? (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="rounded-3xl border border-overlay/10 bg-black/40 px-8 py-6 text-center">
+            <p className="text-xs uppercase tracking-[0.3em] text-cloud/60">
+              {status === "over" ? "Game Over" : "Ready"}
+            </p>
+            <p className="mt-3 text-sm text-cloud/70">
+              {status === "over"
+                ? "Reset to start a new run."
+                : "Press Start, then hit the keys as tiles reach the line."}
+            </p>
+            <div className="mt-6 flex flex-wrap justify-center gap-3">
+              <button
+                onClick={() => void startGame()}
+                className="btn-primary"
+              >
+                Start
+              </button>
+              <button onClick={resetGame} className="btn-outline">
+                Reset
+              </button>
+            </div>
+            <p className="mt-4 text-xs uppercase tracking-[0.25em] text-cloud/50">
+              Tip: Press Space to start.
+            </p>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+});
+
 export const PianoTilesPage: React.FC = () => {
   const [difficulty, setDifficulty] = useState<Difficulty>("easy");
   const [status, setStatus] = useState<GameStatus>("idle");
@@ -96,7 +248,6 @@ export const PianoTilesPage: React.FC = () => {
   const [highScore, setHighScore] = useState(0);
   const [pressedKeys, setPressedKeys] = useState<Set<string>>(() => new Set());
   const [boardHeightPx, setBoardHeightPx] = useState(520);
-  const [nowMs, setNowMs] = useState(() => performance.now());
 
   const boardRef = useRef<HTMLDivElement | null>(null);
 
@@ -111,7 +262,7 @@ export const PianoTilesPage: React.FC = () => {
   const highScoreRef = useRef(highScore);
   const pressedKeysRef = useRef<Set<string>>(new Set());
   const boardHeightRef = useRef(boardHeightPx);
-  const nowMsRef = useRef(nowMs);
+  const nowMsRef = useRef(performance.now());
 
   const rafIdRef = useRef<number | null>(null);
   const spawnTimerRef = useRef<number | null>(null);
@@ -158,10 +309,6 @@ export const PianoTilesPage: React.FC = () => {
   useEffect(() => {
     boardHeightRef.current = boardHeightPx;
   }, [boardHeightPx]);
-
-  useEffect(() => {
-    nowMsRef.current = nowMs;
-  }, [nowMs]);
 
   useEffect(() => {
     try {
@@ -348,7 +495,6 @@ export const PianoTilesPage: React.FC = () => {
       }
 
       nowMsRef.current = timestampMs;
-      setNowMs(timestampMs);
 
       const cfg = configRef.current;
       const currentTiles = tilesRef.current;
@@ -487,7 +633,6 @@ export const PianoTilesPage: React.FC = () => {
     statusRef.current = "running";
     const now = performance.now();
     nowMsRef.current = now;
-    setNowMs(now);
 
     startLoops(true);
     await startMusic();
@@ -504,7 +649,6 @@ export const PianoTilesPage: React.FC = () => {
     statusRef.current = "idle";
     const now = performance.now();
     nowMsRef.current = now;
-    setNowMs(now);
   }, [clearPressedKeys, setStatsSynced, setTilesSynced, stopLoops, stopMusic]);
 
   useEffect(() => {
@@ -618,7 +762,7 @@ export const PianoTilesPage: React.FC = () => {
               Best on a physical keyboard. Hit the lane keys when tiles cross the line.
             </p>
           </div>
-          <div className="panel-solid rounded-2xl border border-white/10 px-5 py-4">
+          <div className="panel-solid rounded-2xl border border-overlay/10 px-5 py-4">
             <p className="text-xs uppercase tracking-[0.2em] text-cloud/60">Keys</p>
             <p className="mt-2 font-mono text-sm text-cloud">
               {config.keys.join(" ")}
@@ -631,7 +775,7 @@ export const PianoTilesPage: React.FC = () => {
       </section>
 
       <section className="grid gap-6 lg:grid-cols-3">
-        <div className="panel-solid rounded-3xl border border-white/10 p-6 lg:col-span-1">
+        <div className="panel-solid rounded-3xl border border-overlay/10 p-6 lg:col-span-1">
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="text-xs uppercase tracking-[0.3em] text-cloud/60">Controls</p>
@@ -709,40 +853,40 @@ export const PianoTilesPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="panel-solid rounded-3xl border border-white/10 p-6 lg:col-span-2">
+        <div className="panel-solid rounded-3xl border border-overlay/10 p-6 lg:col-span-2">
           <p className="text-xs uppercase tracking-[0.3em] text-cloud/60">Stats</p>
           <h3 className="mt-2 font-display text-2xl text-cloud">Performance</h3>
 
           <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <div className="rounded-2xl border border-overlay/10 bg-overlay/5 p-4">
               <p className="text-xs uppercase tracking-[0.2em] text-cloud/60">Score</p>
               <p className="mt-2 font-display text-3xl text-cloud">{stats.score}</p>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <div className="rounded-2xl border border-overlay/10 bg-overlay/5 p-4">
               <p className="text-xs uppercase tracking-[0.2em] text-cloud/60">High Score</p>
               <p className="mt-2 font-display text-3xl text-cloud">{highScore}</p>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <div className="rounded-2xl border border-overlay/10 bg-overlay/5 p-4">
               <p className="text-xs uppercase tracking-[0.2em] text-cloud/60">Combo</p>
               <p className="mt-2 font-display text-3xl text-cloud">{stats.combo}</p>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <div className="rounded-2xl border border-overlay/10 bg-overlay/5 p-4">
               <p className="text-xs uppercase tracking-[0.2em] text-cloud/60">Max Combo</p>
               <p className="mt-2 font-display text-3xl text-cloud">{stats.maxCombo}</p>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <div className="rounded-2xl border border-overlay/10 bg-overlay/5 p-4">
               <p className="text-xs uppercase tracking-[0.2em] text-cloud/60">Hits</p>
               <p className="mt-2 font-display text-3xl text-cloud">{stats.hits}</p>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <div className="rounded-2xl border border-overlay/10 bg-overlay/5 p-4">
               <p className="text-xs uppercase tracking-[0.2em] text-cloud/60">Misses</p>
               <p className="mt-2 font-display text-3xl text-cloud">{stats.misses}</p>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <div className="rounded-2xl border border-overlay/10 bg-overlay/5 p-4">
               <p className="text-xs uppercase tracking-[0.2em] text-cloud/60">Accuracy</p>
               <p className="mt-2 font-display text-3xl text-cloud">{accuracy}%</p>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <div className="rounded-2xl border border-overlay/10 bg-overlay/5 p-4">
               <p className="text-xs uppercase tracking-[0.2em] text-cloud/60">Lives</p>
               <p className="mt-2 font-display text-3xl text-cloud">{stats.lives}</p>
             </div>
@@ -754,7 +898,7 @@ export const PianoTilesPage: React.FC = () => {
         </div>
       </section>
 
-      <section className="panel-solid rounded-3xl border border-white/10 p-6">
+      <section className="panel-solid rounded-3xl border border-overlay/10 p-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <p className="text-xs uppercase tracking-[0.3em] text-cloud/60">Game Board</p>
@@ -767,93 +911,19 @@ export const PianoTilesPage: React.FC = () => {
           ) : null}
         </div>
 
-        <div
-          ref={boardRef}
-          className="relative mt-6 h-[520px] overflow-hidden rounded-3xl border border-white/10 bg-black/20"
-        >
-          <div
-            className="absolute left-0 right-0"
-            style={{
-              top: Math.max(0, hitLineY - HIT_WINDOW_PX),
-              height: HIT_WINDOW_PX * 2
-            }}
-          >
-            <div className="h-full w-full bg-mint/5 blur-md" />
-          </div>
-          <div
-            className="absolute left-0 right-0"
-            style={{ top: hitLineY }}
-          >
-            <div className="h-[2px] w-full bg-mint/70 shadow-[0_0_18px_rgba(46,196,182,0.45)]" />
-          </div>
-
-          <div className="absolute inset-0 grid" style={boardGridStyle}>
-            {config.keys.map((laneKey, laneIndex) => {
-              const isPressed = pressedKeys.has(laneKey);
-              const laneTiles = tilesByLane[laneIndex] || [];
-              return (
-                <div
-                  key={laneKey}
-                  className={`relative h-full border-l border-white/10 ${laneIndex === 0 ? "border-l-0" : ""} ${isPressed ? "bg-white/5" : ""}`}
-                >
-                  {laneTiles.map((tile) => {
-                    const progress = (nowMs - tile.spawnAtMs) / config.travelMs;
-                    const centerY = progress * boardHeightPx;
-                    const topPx = Math.round(centerY - TILE_HEIGHT_PX / 2);
-                    const gradient = TILE_GRADIENTS[tile.lane % TILE_GRADIENTS.length]!;
-                    return (
-                      <div
-                        key={tile.id}
-                        className={`absolute left-2 right-2 rounded-2xl border border-white/20 bg-gradient-to-b ${gradient} shadow-[0_12px_28px_rgba(0,0,0,0.35)]`}
-                        style={{
-                          top: `${topPx}px`,
-                          height: `${TILE_HEIGHT_PX}px`
-                        }}
-                      />
-                    );
-                  })}
-
-                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2">
-                    <div
-                      className={`rounded-full border px-4 py-2 text-center font-mono text-sm ${isPressed ? "border-mint/60 bg-mint/20 text-cloud" : "border-white/20 bg-white/5 text-cloud/80"}`}
-                    >
-                      {laneKey}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {status !== "running" ? (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="rounded-3xl border border-white/10 bg-black/40 px-8 py-6 text-center">
-                <p className="text-xs uppercase tracking-[0.3em] text-cloud/60">
-                  {status === "over" ? "Game Over" : "Ready"}
-                </p>
-                <p className="mt-3 text-sm text-cloud/70">
-                  {status === "over"
-                    ? "Reset to start a new run."
-                    : "Press Start, then hit the keys as tiles reach the line."}
-                </p>
-                <div className="mt-6 flex flex-wrap justify-center gap-3">
-                  <button
-                    onClick={() => void startGame()}
-                    className="btn-primary"
-                  >
-                    Start
-                  </button>
-                  <button onClick={resetGame} className="btn-outline">
-                    Reset
-                  </button>
-                </div>
-                <p className="mt-4 text-xs uppercase tracking-[0.25em] text-cloud/50">
-                  Tip: Press Space to start.
-                </p>
-              </div>
-            </div>
-          ) : null}
-        </div>
+        <PianoLaneBoard
+          status={status}
+          boardRef={boardRef}
+          boardHeightPx={boardHeightPx}
+          hitLineY={hitLineY}
+          boardGridStyle={boardGridStyle}
+          keys={config.keys}
+          pressedKeys={pressedKeys}
+          tilesByLane={tilesByLane}
+          travelMs={config.travelMs}
+          startGame={() => void startGame()}
+          resetGame={resetGame}
+        />
       </section>
     </div>
   );

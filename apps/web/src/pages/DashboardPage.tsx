@@ -52,8 +52,15 @@ export const DashboardPage: React.FC = () => {
 
   const tooltipStyles = useMemo(
     () => ({
-      content: { background: "#111127", border: "1px solid rgba(255,255,255,0.1)" },
-      label: { color: "#f6f4f0" }
+      content: {
+        background: "linear-gradient(145deg, rgb(var(--c-ink) / 0.92), rgb(var(--c-ink) / 0.78))",
+        border: "1px solid rgb(var(--c-overlay) / 0.14)",
+        borderRadius: "14px",
+        boxShadow: "0 18px 44px rgb(0 0 0 / 0.22)",
+        backdropFilter: "blur(16px)"
+      } satisfies React.CSSProperties,
+      label: { color: "rgb(var(--c-cloud) / 0.95)" } satisfies React.CSSProperties,
+      item: { color: "rgb(var(--c-cloud) / 0.85)" } satisfies React.CSSProperties
     }),
     []
   );
@@ -97,16 +104,24 @@ export const DashboardPage: React.FC = () => {
         <div className="mt-6 h-64">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData}>
-              <CartesianGrid stroke="rgba(255,255,255,0.08)" strokeDasharray="4 4" />
-              <XAxis dataKey="name" stroke="#f6f4f0" />
-              <YAxis stroke="#f6f4f0" />
+              <CartesianGrid stroke="rgb(var(--c-overlay) / 0.14)" strokeDasharray="4 4" />
+              <XAxis
+                dataKey="name"
+                stroke="rgb(var(--c-cloud) / 0.65)"
+                tick={{ fill: "rgb(var(--c-cloud) / 0.75)" }}
+              />
+              <YAxis
+                stroke="rgb(var(--c-cloud) / 0.65)"
+                tick={{ fill: "rgb(var(--c-cloud) / 0.75)" }}
+              />
               <Tooltip
                 contentStyle={tooltipStyles.content}
                 labelStyle={tooltipStyles.label}
+                itemStyle={tooltipStyles.item}
               />
-              <Line type="monotone" dataKey="wpm" stroke="#2ec4b6" strokeWidth={2} />
-              <Line type="monotone" dataKey="accuracy" stroke="#b69cff" strokeWidth={2} />
-              <Line type="monotone" dataKey="efficiency" stroke="#e4572e" strokeWidth={2} />
+              <Line type="monotone" dataKey="wpm" stroke="rgb(var(--c-mint) / 1)" strokeWidth={2} />
+              <Line type="monotone" dataKey="accuracy" stroke="rgb(var(--c-lilac) / 1)" strokeWidth={2} />
+              <Line type="monotone" dataKey="efficiency" stroke="rgb(var(--c-accent) / 1)" strokeWidth={2} />
             </LineChart>
           </ResponsiveContainer>
         </div>
