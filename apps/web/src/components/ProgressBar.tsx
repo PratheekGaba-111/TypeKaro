@@ -4,9 +4,10 @@ interface ProgressBarProps {
   value: number;
   max: number;
   label?: string;
+  unit?: string;
 }
 
-export const ProgressBar = React.memo<ProgressBarProps>(({ value, max, label }) => {
+export const ProgressBar = React.memo<ProgressBarProps>(({ value, max, label, unit = "XP" }) => {
   const safeMax = max > 0 ? max : 1;
   const percent = Math.min(100, Math.round((value / safeMax) * 100));
 
@@ -19,7 +20,9 @@ export const ProgressBar = React.memo<ProgressBarProps>(({ value, max, label }) 
           style={{ width: `${percent}%` }}
         />
       </div>
-      <p className="mt-2 text-xs text-cloud/60">{value} / {max} XP</p>
+      <p className="mt-2 text-xs text-cloud/60">
+        {value} / {max} {unit}
+      </p>
     </div>
   );
 });
