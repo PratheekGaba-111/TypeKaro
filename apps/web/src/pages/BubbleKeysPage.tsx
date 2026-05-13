@@ -480,7 +480,7 @@ export const BubbleKeysPage: React.FC = () => {
 
       let guard = 0;
       while (timestampMs >= (nextSpawnAtMsRef.current ?? 0) && guard < 8) {
-        const scheduledAt = nextSpawnAtMsRef.current ?? timestampMs;
+        const scheduledAt : any = nextSpawnAtMsRef.current ?? timestampMs;
         const interval = spawnIntervalAt(scheduledAt);
 
         if (activeCount < MAX_BUBBLES) {
